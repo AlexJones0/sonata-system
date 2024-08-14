@@ -14,10 +14,15 @@
 #include "timer.h"
 #include "rv_plic.h"
 #include "spi.h"
+#include "core/m3x6_16pt.h"
+#include "st7735/lcd_st7735.h"
 #include "ksz8851.h"
+#include "lcd.h"
 
 static const bool dual_uart = true;
 static uart_t uart0, uart1;
+
+St7735Context lcd;
 
 static inline void write_both_uart(char ch0, char ch1) {
   uart_out(uart0, ch0);
@@ -37,7 +42,8 @@ void write_to_uart(const char *__restrict__ __format, ...) {
 }
 
 void lcd_draw_str(uint32_t x, uint32_t y, const char *format, uint32_t bg_color, uint32_t fg_color, ...) {
-    /*// TODO modularise this code, its repeated from the UART stuff, and a huge mess
+    // TODO modularise this code, its repeated from the UART stuff, and a huge mess
+    arch_local_irq_disable();
     char __buffer[1024];
     char *__restrict__ __buf_ptr = &*__buffer;
     va_list args;
@@ -45,24 +51,35 @@ void lcd_draw_str(uint32_t x, uint32_t y, const char *format, uint32_t bg_color,
     vsnprintf(__buf_ptr, 1024, format, args);
     va_end(args);
 
-    lcd->draw_str({x, y}, __buffer, static_cast<Color>(bg_color), static_cast<Color>(fg_color));*/
-    // TODO implement
+    LCD_Point pos = {x, y};
+	lcd_st7735_set_font(&lcd, &m3x6_16ptFont); 
+    lcd_st7735_set_font_colors(&lcd, (uint32_t) bg_color, (uint32_t) fg_color);
+    lcd_st7735_puts(&lcd, pos, __buf_ptr);
+    arch_local_irq_enable();
 }
 
 void lcd_clean(uint32_t color) {
-    //lcd->clean(static_cast<Color>(color));
-    // TODO implement
+    size_t w, h;
+    lcd_st7735_get_resolution(&lcd, &h, &w);
+    LCD_Point origin = {0, 0};
+    LCD_rectangle rect = {origin, w, h};
+    lcd_st7735_fill_rectangle(&lcd, rect, color);
 }
 
 void lcd_fill_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color) {
-    /*lcd->fill_rect(Rect::from_point_and_size({x, y}, {w, h}), 
-                   static_cast<Color>(color));*/
-    // TODO implement
+    LCD_Point point = {x, y};
+    LCD_rectangle rect = {point, w, h};
+    lcd_st7735_fill_rectangle(&lcd, rect, color);
 }
 
 void lcd_draw_img(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint8_t *data) {
-    //lcd->draw_image_rgb565(Rect::from_point_and_size({x, y}, {w, h}), data);
-    // TODO implement
+    LCD_Point point = {x, y};
+    LCD_rectangle rect = {point, w, h};
+    lcd_st7735_draw_rgb565(&lcd, rect, data);
+}
+
+uint8_t read_joystick(void) {
+    return ((uint8_t) read_gpio(GPIO_IN_DBNC)) & 0x1f;
 }
 
 uint64_t wait(const uint64_t wait_for) {
@@ -126,8 +143,8 @@ static TaskTwo mem_task_two = {
 __attribute__((section(".data.__contiguous.__task_one"))) 
 static TaskOne mem_task_one = {
 	.acceleration = 12,
-	.braking = 59,
-	.speed = 30,
+	.braking = 2,
+	.speed = 0,
 };
 
 // Thread entry point
@@ -175,6 +192,12 @@ int main(void)
     }
     wait(get_elapsed_time() + 2500);
 
+    // Initialise LCD display drivers
+    LCD_Interface interface;
+    spi_t lcd_spi;
+    spi_init(&lcd_spi, LCD_SPI, LcdSpiSpeedHz);
+    lcd_init(&lcd_spi, &lcd, &interface);
+
     // Verify that for the purpose of a reproducible error in our demo, that
     // task one and task two have been assigned contiguous memories as required.
     write_to_uart("task_two_mem_location: %u\n", (unsigned int) &mem_task_two);
@@ -186,19 +209,29 @@ int main(void)
     // Adapt common automotive library for legacy drivers 
     init_mem(&mem_task_one, &mem_task_two);
     init_uart_callback(write_to_uart);
-    init_wait_callback(100, wait);
+    init_wait_callback(50, wait);
     init_time_callback(get_elapsed_time);
-    init_lcd(0, 0); // TODO implement
+    init_lcd(lcd.parent.width, lcd.parent.height);
     init_lcd_draw_str_callback(lcd_draw_str);
     init_lcd_clean_callback(lcd_clean);
     init_lcd_fill_rect_callback(lcd_fill_rect);
     init_lcd_draw_img_callback(lcd_draw_img);
     init_loop_callback(null_callback);
+    init_start_callback(null_callback);
+    init_joystick_read_callback(read_joystick);
     init_ethernet_transmit_callback(send_ethernet_frame);
 
-    // Run automotive demo
-	run(get_elapsed_time());
-    
+    uint8_t option;
+    while (option < 2) {
+        // Run demo selection
+        option = select_demo();
+
+        if (option == 0) {
+            // Run automotive demo
+            run(get_elapsed_time());
+        }
+    }
+
     // Legacy driver cleanup
     timer_disable();
     asm volatile("wfi");
