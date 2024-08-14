@@ -22,6 +22,7 @@ static uint64_t wait_time;
 static void (*uart_callback)(const char *__restrict__ __format, ...);
 static uint64_t (*wait_callback)(const uint64_t wait_for);
 static void (*loop_callback)(void);
+static void (*ethernet_transmit_callback)(const uint64_t *buffer, uint16_t length);
 
 void init_mem(TaskOne *task_one, TaskTwo *task_two) {
     task_one_mem = task_one;
@@ -41,6 +42,10 @@ void init_loop_callback(void (*callback)(void)) {
     loop_callback = callback;
 }
 
+void init_ethernet_transmit_callback(void (*callback)(const uint64_t *buffer, uint16_t length)) {
+    ethernet_transmit_callback = callback;
+}
+
 bool task_one() {
     if (task_one_mem->acceleration > 0) {
         task_one_mem->speed += 1;
@@ -48,9 +53,15 @@ bool task_one() {
     if (task_one_mem->braking > 0) {
         task_one_mem->speed -= 1;
     }
+    //task_one_mem->acceleration += 1;
     uart_callback("Sending pedal data: acceleration=%u, braking=%u.\n", 
         (unsigned int) task_one_mem->acceleration, 
         (unsigned int) task_one_mem->braking);
+    const uint64_t transmit_buf[2] = {
+        task_one_mem->acceleration, 
+        task_one_mem->braking
+    };
+    ethernet_transmit_callback(transmit_buf, 2);
     uart_callback("Car is at a new speed of %u\n", (unsigned int) task_one_mem->speed);
     return true;
 }
@@ -59,8 +70,8 @@ bool task_two() {
     static uint64_t counter;
     counter += 1;
     uart_callback("Calling task two update, count = %u\n", (unsigned int) counter);
-    if (counter >= 100) {
-        uart_callback("counter >= 100: triggering a bug\n");
+    if (counter == 100) {
+        uart_callback("counter == 100: triggering a bug\n");
     }
     if (counter <= 100) {
         // uart_callback("Writing to mem location %u\n", (unsigned int) &task_two_mem->write[counter]);

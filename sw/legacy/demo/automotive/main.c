@@ -6,11 +6,6 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include <assert.h>
-#include <lwip/init.h>
-#include <lwip/netif.h>
-#include <lwip/dhcp.h>
-#include <lwip/timeouts.h>
-#include <netif/ethernet.h>
 
 #include "./automotive.c"
 
@@ -50,6 +45,50 @@ uint64_t wait(const uint64_t wait_for) {
     return cur_time;
 }
 
+void null_callback(void) {};
+
+struct netif interface;
+
+typedef struct EthernetHeader {
+    uint8_t mac_destination[6];
+    uint8_t mac_source[6];
+    uint8_t type[2];
+} __attribute__((__packed__)) EthernetHeader;
+
+void send_ethernet_frame(const uint64_t *buffer, uint16_t length) {
+    if (length > (100 / 8)) {
+        length = 100 / 8;
+    }
+    uint8_t transmit_buf[128];
+    EthernetHeader header = {
+        {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+        {0x3a, 0x30, 0x25, 0x24, 0xfe, 0x7a},
+        {0x08, 0x06},
+    };
+    for (uint32_t i = 0; i < 14; i++) {
+        transmit_buf[i] = header.mac_destination[i];
+    }
+    for (uint32_t i = 0; i < length; ++i) {
+        transmit_buf[14+i*8+0] = (buffer[i] >> 56) & 0xFF;
+        transmit_buf[14+i*8+1] = (buffer[i] >> 48) & 0xFF;
+        transmit_buf[14+i*8+2] = (buffer[i] >> 40) & 0xFF;
+        transmit_buf[14+i*8+3] = (buffer[i] >> 32) & 0xFF;
+        transmit_buf[14+i*8+4] = (buffer[i] >> 24) & 0xFF;
+        transmit_buf[14+i*8+5] = (buffer[i] >> 16) & 0xFF;
+        transmit_buf[14+i*8+6] = (buffer[i] >> 8 ) & 0xFF;
+        transmit_buf[14+i*8+7] = buffer[i] & 0xFF;
+    }
+
+    struct fbuf buf = {
+        (void *) transmit_buf,
+        (int8_t) 14 + length * 8,
+    };
+    
+    if (ksz8851_output(&interface, &buf) != 0) {
+        write_to_uart("Error sending frame...\n");
+    }
+}
+
 __attribute__((section(".data.__contiguous.__task_two")))
 static TaskTwo mem_task_two = {
 	.write = {0},
@@ -57,8 +96,8 @@ static TaskTwo mem_task_two = {
 
 __attribute__((section(".data.__contiguous.__task_one"))) 
 static TaskOne mem_task_one = {
-	.acceleration = 0,
-	.braking = 0,
+	.acceleration = 12,
+	.braking = 59,
 	.speed = 30,
 };
 
@@ -86,29 +125,27 @@ int main(void)
         uart_init(uart0);
     }
 
-    // TODO when implementing ethernet on legacy
-    // Make my own `struct netif` and populate it myself
-    // This involves making my own `netif->input` callback function also.
-    // Finally, I apparently also need to handle manually allocating and 
-    // freeing the pbuf also?
-
     // Initialise the timer when running in legacy mode
     timer_init();
-    timer_enable(SYSCLK_FREQ / 5);
+    timer_enable(SYSCLK_FREQ / 1000);
 
     // Initialise Ethernet support
     rv_plic_init();
     spi_t spi;
     spi_init(&spi, ETH_SPI, /*speed=*/0);
-    struct netif netif;
-    netif_add(&netif, IP_ADDR_ANY, IP4_ADDR_ANY, IP4_ADDR_ANY, &spi, ksz8851_init, ethernet_input);
-    netif.name[0] = 'e';
-    netif.name[1] = '0';
-    netif_set_default(&netif);
-    netif_set_up(&netif);
-    netif_set_link_up(&netif);
-    dhcp_start(&netif);
-    
+    interface.spi = &spi;
+    uint8_t mac_source[6] = {0x3a, 0x30, 0x25, 0x24, 0xfe, 0x7a};
+    ksz8851_init(&interface, mac_source);
+
+    // Wait for a physical link
+    if (!ksz8851_get_phy_status(&interface)) {
+        write_to_uart("Waiting for a good physical ethernet link...\n");
+    }
+    while (!ksz8851_get_phy_status(&interface)) {
+        wait(get_elapsed_time() + 50);
+    }
+    wait(get_elapsed_time() + 2500);
+
     // Verify that for the purpose of a reproducible error in our demo, that
     // task one and task two have been assigned contiguous memories as required.
     write_to_uart("task_two_mem_location: %u\n", (unsigned int) &mem_task_two);
@@ -120,8 +157,9 @@ int main(void)
     // Adapt common automotive library for legacy drivers 
     init_mem(&mem_task_one, &mem_task_two);
     init_uart_callback(write_to_uart);
-    init_wait_callback(1, wait);
-    init_loop_callback(sys_check_timeouts);
+    init_wait_callback(100, wait);
+    init_ethernet_transmit_callback(send_ethernet_frame);
+    init_loop_callback(null_callback);
 
     // Run automotive demo
 	run(get_elapsed_time());

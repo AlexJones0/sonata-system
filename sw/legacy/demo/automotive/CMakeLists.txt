@@ -1,4 +1,4 @@
-add_executable(automotive main.c)
+add_executable(automotive main.c ksz8851.c)
 target_link_libraries(automotive common)
 
 add_custom_command(
