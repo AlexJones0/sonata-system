@@ -36,6 +36,35 @@ void write_to_uart(const char *__restrict__ __format, ...) {
     arch_local_irq_enable();
 }
 
+void lcd_draw_str(uint32_t x, uint32_t y, const char *format, uint32_t bg_color, uint32_t fg_color, ...) {
+    /*// TODO modularise this code, its repeated from the UART stuff, and a huge mess
+    char __buffer[1024];
+    char *__restrict__ __buf_ptr = &*__buffer;
+    va_list args;
+    va_start(args, fg_color);
+    vsnprintf(__buf_ptr, 1024, format, args);
+    va_end(args);
+
+    lcd->draw_str({x, y}, __buffer, static_cast<Color>(bg_color), static_cast<Color>(fg_color));*/
+    // TODO implement
+}
+
+void lcd_clean(uint32_t color) {
+    //lcd->clean(static_cast<Color>(color));
+    // TODO implement
+}
+
+void lcd_fill_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color) {
+    /*lcd->fill_rect(Rect::from_point_and_size({x, y}, {w, h}), 
+                   static_cast<Color>(color));*/
+    // TODO implement
+}
+
+void lcd_draw_img(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint8_t *data) {
+    //lcd->draw_image_rgb565(Rect::from_point_and_size({x, y}, {w, h}), data);
+    // TODO implement
+}
+
 uint64_t wait(const uint64_t wait_for) {
     uint64_t cur_time = get_elapsed_time();
     while (cur_time < wait_for) {
@@ -158,8 +187,14 @@ int main(void)
     init_mem(&mem_task_one, &mem_task_two);
     init_uart_callback(write_to_uart);
     init_wait_callback(100, wait);
-    init_ethernet_transmit_callback(send_ethernet_frame);
+    init_time_callback(get_elapsed_time);
+    init_lcd(0, 0); // TODO implement
+    init_lcd_draw_str_callback(lcd_draw_str);
+    init_lcd_clean_callback(lcd_clean);
+    init_lcd_fill_rect_callback(lcd_fill_rect);
+    init_lcd_draw_img_callback(lcd_draw_img);
     init_loop_callback(null_callback);
+    init_ethernet_transmit_callback(send_ethernet_frame);
 
     // Run automotive demo
 	run(get_elapsed_time());
