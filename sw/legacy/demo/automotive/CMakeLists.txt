@@ -7,8 +7,14 @@ ${CMAKE_CURRENT_SOURCE_DIR}/../../../../vendor/display_drivers/core/m3x6_16pt.c
 ${CMAKE_CURRENT_SOURCE_DIR}/../../../../vendor/display_drivers/st7735/lcd_st7735.c
 )
 
+add_library(automotive_lib
+${CMAKE_CURRENT_SOURCE_DIR}/lib/automotive_common.c
+${CMAKE_CURRENT_SOURCE_DIR}/lib/automotive_menu.c
+${CMAKE_CURRENT_SOURCE_DIR}/lib/simple_bug.c
+)
+
 add_executable(automotive main.c ksz8851.c lcd.c)
-target_link_libraries(automotive common lcd_st7735_lib_am)
+target_link_libraries(automotive automotive_lib common lcd_st7735_lib_am)
 target_include_directories(automotive PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../../../vendor/display_drivers)
 
 add_custom_command(
