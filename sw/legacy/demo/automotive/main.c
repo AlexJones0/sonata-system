@@ -34,49 +34,41 @@ static inline void write_both_uart(char ch0, char ch1) {
 void write_to_uart(const char *__restrict__ __format, ...) {
     arch_local_irq_disable();
     char __buffer[1024];
-    char *__restrict__ __buf_ptr = &*__buffer;
     va_list args;
     va_start(args, __format);
-    vsnprintf(__buf_ptr, 1024, __format, args);
+    vsnprintf(__buffer, 1024, __format, args);
     va_end(args);
-    putstr(__buf_ptr);
+    putstr(__buffer);
     arch_local_irq_enable();
 }
 
 void lcd_draw_str(uint32_t x, uint32_t y, const char *format, uint32_t bg_color, uint32_t fg_color, ...) {
-    // TODO modularise this code, its repeated from the UART stuff, and a huge mess
-    arch_local_irq_disable();
     char __buffer[1024];
-    char *__restrict__ __buf_ptr = &*__buffer;
     va_list args;
     va_start(args, fg_color);
-    vsnprintf(__buf_ptr, 1024, format, args);
+    vsnprintf(__buffer, 1024, format, args);
     va_end(args);
 
     LCD_Point pos = {x, y};
 	lcd_st7735_set_font(&lcd, &m3x6_16ptFont); 
     lcd_st7735_set_font_colors(&lcd, (uint32_t) bg_color, (uint32_t) fg_color);
-    lcd_st7735_puts(&lcd, pos, __buf_ptr);
-    arch_local_irq_enable();
+    lcd_st7735_puts(&lcd, pos, __buffer);
 }
 
 void lcd_clean(uint32_t color) {
     size_t w, h;
     lcd_st7735_get_resolution(&lcd, &h, &w);
-    LCD_Point origin = {0, 0};
-    LCD_rectangle rect = {origin, w, h};
+    LCD_rectangle rect = {(LCD_Point){0, 0}, w, h};
     lcd_st7735_fill_rectangle(&lcd, rect, color);
 }
 
 void lcd_fill_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color) {
-    LCD_Point point = {x, y};
-    LCD_rectangle rect = {point, w, h};
+    LCD_rectangle rect = {(LCD_Point){x, y}, w, h};
     lcd_st7735_fill_rectangle(&lcd, rect, color);
 }
 
 void lcd_draw_img(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint8_t *data) {
-    LCD_Point point = {x, y};
-    LCD_rectangle rect = {point, w, h};
+    LCD_rectangle rect = {(LCD_Point){x, y}, w, h};
     lcd_st7735_draw_rgb565(&lcd, rect, data);
 }
 
@@ -194,18 +186,24 @@ int main(void)
     assert((uint32_t) &mem_task_two + sizeof(mem_task_two) == (uint32_t) &mem_task_one);
 
     // Adapt common automotive library for legacy drivers 
-    init_uart_callback(write_to_uart);
-    init_wait_callback(50, wait);
-    init_time_callback(get_elapsed_time);
     init_lcd(lcd.parent.width, lcd.parent.height);
-    init_lcd_draw_str_callback(lcd_draw_str);
-    init_lcd_clean_callback(lcd_clean);
-    init_lcd_fill_rect_callback(lcd_fill_rect);
-    init_lcd_draw_img_callback(lcd_draw_img);
-    init_loop_callback(null_callback);
-    init_start_callback(null_callback);
-    init_joystick_read_callback(read_joystick);
-    init_ethernet_transmit_callback(send_ethernet_frame);
+    init_callbacks((Automotive_Callbacks) {
+        .uart_send = write_to_uart,
+        .wait = wait,
+        .wait_time = 90,
+        .time = get_elapsed_time,
+        .loop = null_callback,
+        .start = null_callback,
+        .joystick_read = read_joystick,
+        .pedal_read = NULL,
+        .ethernet_transmit = send_ethernet_frame,
+        .lcd = {
+            .draw_str = lcd_draw_str,
+            .clean = lcd_clean,
+            .fill_rect = lcd_fill_rect,
+            .draw_img_rgb565 = lcd_draw_img,
+        },
+    });
 
     uint8_t option;
     while (option < 2) {

@@ -26,7 +26,7 @@ static void send_pedal_frame(const uint64_t *data, uint16_t length) {
 }
 
 static bool task_one() {
-    uart_callback("Sending pedal data: acceleration=%u, braking=%u.\n", 
+    callbacks.uart_send("Sending pedal data: acceleration=%u, braking=%u.\n", 
         (unsigned int) task_one_mem->acceleration, 
         (unsigned int) task_one_mem->braking);
     const uint64_t frame_data[2] = {
@@ -47,14 +47,14 @@ bool task_two() {
         first_call_to_task = false;
     }
     counter += 1;
-    uart_callback("Calling task two update, count = %u\n", (unsigned int) counter);
-    lcd_draw_str_callback(10, 20, "counter = %u;", 0x000000, 0xCCCCCC, (unsigned int) counter);
-    lcd_draw_str_callback(10, 30, "if (counter <= 100) {", 0x000000, 0xCCCCCC);
+    callbacks.uart_send("Calling task two update, count = %u\n", (unsigned int) counter);
+    callbacks.lcd.draw_str(10, 20, "counter = %u;", 0x000000, 0xCCCCCC, (unsigned int) counter);
+    callbacks.lcd.draw_str(10, 30, "if (counter <= 100) {", 0x000000, 0xCCCCCC);
     uint32_t text_color = (counter >= 100) ? 0x0000FF : 0xCCCCCC;
-    lcd_draw_str_callback(10, 40, "    write[counter] = 1000;", 0x000000, text_color);
-    lcd_draw_str_callback(10, 50, "}", 0x000000, 0xCCCCCC);
+    callbacks.lcd.draw_str(10, 40, "    write[counter] = 1000;", 0x000000, text_color);
+    callbacks.lcd.draw_str(10, 50, "}", 0x000000, 0xCCCCCC);
     if (counter == 100) {
-        uart_callback("counter == 100: triggering a bug\n");
+        callbacks.uart_send("counter == 100: triggering a bug\n");
     }
     if (counter <= 100) {
         task_two_mem->write[counter] = 1000;
@@ -64,20 +64,20 @@ bool task_two() {
 
 void run_simple_demo(uint64_t init_time)
 {
-    start_callback();
+    callbacks.start();
     task_one_mem->acceleration = 15;
     task_one_mem->braking = 2;
     task_one_mem->speed = 0;
     first_call_to_task = true;
 
-	uart_callback("Automotive demo started!\n");
-    lcd_draw_str_callback(10, 10, "uint64_t write[100];", 0x000000, 0xCCCCCC);
+	callbacks.uart_send("Automotive demo started!\n");
+    callbacks.lcd.draw_str(10, 10, "uint64_t write[100];", 0x000000, 0xCCCCCC);
     uint64_t last_elapsed_time = init_time;
     for (uint32_t i = 0; i < 175; i++) {
         task_one();
         task_two();
-        last_elapsed_time = wait_callback(last_elapsed_time + wait_time);
-        loop_callback();
+        last_elapsed_time = callbacks.wait(last_elapsed_time + callbacks.wait_time);
+        callbacks.loop();
     }
-    uart_callback("Automotive demo ended!\n");
+    callbacks.uart_send("Automotive demo ended!\n");
 }
