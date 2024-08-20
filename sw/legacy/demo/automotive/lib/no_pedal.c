@@ -1,8 +1,7 @@
 // Copyright lowRISC Contributors.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "simple_bug.h"
-#include "automotive_common.h"
+#include "no_pedal.h"
 
 
 static TaskOne *task_one_mem;
@@ -11,18 +10,9 @@ static TaskTwo *task_two_mem;
 static bool first_call_to_task = true;
 
 
-void init_simple_demo_mem(TaskOne *task_one, TaskTwo *task_two) {
+void init_no_pedal_demo_mem(TaskOne *task_one, TaskTwo *task_two) {
     task_one_mem = task_one;
     task_two_mem = task_two;
-}
-
-static void send_pedal_frame(const uint64_t *data, uint16_t length) {
-    EthernetHeader header = {
-        {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
-        {0x3a, 0x30, 0x25, 0x24, 0xfe, 0x7a},
-        {0x08, 0x06},
-    };
-    send_frame(data, header, length);
 }
 
 static bool task_one() {
@@ -33,7 +23,7 @@ static bool task_one() {
         task_one_mem->acceleration, 
         task_one_mem->braking
     };
-    send_pedal_frame(frame_data, 2);
+    send_data_frame(frame_data, FixedDemoHeader, 2);
     return true;
 }
 
@@ -48,11 +38,11 @@ bool task_two() {
     }
     counter += 1;
     callbacks.uart_send("Calling task two update, count = %u\n", (unsigned int) counter);
-    callbacks.lcd.draw_str(10, 20, "counter = %u;", 0x000000, 0xCCCCCC, (unsigned int) counter);
-    callbacks.lcd.draw_str(10, 30, "if (counter <= 100) {", 0x000000, 0xCCCCCC);
-    uint32_t text_color = (counter >= 100) ? 0x0000FF : 0xCCCCCC;
-    callbacks.lcd.draw_str(10, 40, "    write[counter] = 1000;", 0x000000, text_color);
-    callbacks.lcd.draw_str(10, 50, "}", 0x000000, 0xCCCCCC);
+    callbacks.lcd.draw_str(10, 20, "counter = %u;", ColorBlack, ColorGrey, (unsigned int) counter);
+    callbacks.lcd.draw_str(10, 30, "if (counter <= 100) {", ColorBlack, ColorGrey);
+    uint32_t text_color = (counter >= 100) ? ColorRed : ColorGrey;
+    callbacks.lcd.draw_str(10, 40, "    write[counter] = 1000;", ColorBlack, text_color);
+    callbacks.lcd.draw_str(10, 50, "}", ColorBlack, ColorGrey);
     if (counter == 100) {
         callbacks.uart_send("counter == 100: triggering a bug\n");
     }
@@ -62,16 +52,19 @@ bool task_two() {
     return true;
 }
 
-void run_simple_demo(uint64_t init_time)
+void run_no_pedal_demo(uint64_t init_time)
 {
     callbacks.start();
+
+    send_mode_frame(FixedDemoHeader, DemoModePassthrough);
+
     task_one_mem->acceleration = 15;
-    task_one_mem->braking = 2;
+    task_one_mem->braking = 0;
     task_one_mem->speed = 0;
     first_call_to_task = true;
 
 	callbacks.uart_send("Automotive demo started!\n");
-    callbacks.lcd.draw_str(10, 10, "uint64_t write[100];", 0x000000, 0xCCCCCC);
+    callbacks.lcd.draw_str(10, 10, "uint64_t write[100];", ColorBlack, ColorGrey);
     uint64_t last_elapsed_time = init_time;
     for (uint32_t i = 0; i < 175; i++) {
         task_one();

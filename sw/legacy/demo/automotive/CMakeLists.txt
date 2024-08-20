@@ -10,7 +10,10 @@ ${CMAKE_CURRENT_SOURCE_DIR}/../../../../vendor/display_drivers/st7735/lcd_st7735
 add_library(automotive_lib
 ${CMAKE_CURRENT_SOURCE_DIR}/lib/automotive_common.c
 ${CMAKE_CURRENT_SOURCE_DIR}/lib/automotive_menu.c
-${CMAKE_CURRENT_SOURCE_DIR}/lib/simple_bug.c
+${CMAKE_CURRENT_SOURCE_DIR}/lib/no_pedal.c
+${CMAKE_CURRENT_SOURCE_DIR}/lib/joystick_pedal.c
+${CMAKE_CURRENT_SOURCE_DIR}/lib/digital_pedal.c
+${CMAKE_CURRENT_SOURCE_DIR}/lib/analogue_pedal.c
 )
 
 add_executable(automotive main.c ksz8851.c lcd.c)

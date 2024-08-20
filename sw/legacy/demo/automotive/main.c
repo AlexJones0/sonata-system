@@ -9,7 +9,9 @@
 
 #include "lib/automotive_common.h"
 #include "lib/automotive_menu.h"
-#include "lib/simple_bug.h"
+#include "lib/no_pedal.h"
+#include "lib/joystick_pedal.h"
+#include "lib/digital_pedal.h"
 
 #include "sonata_system.h"
 #include "gpio.h"
@@ -74,6 +76,15 @@ void lcd_draw_img(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint8_t 
 
 uint8_t read_joystick(void) {
     return ((uint8_t) read_gpio(GPIO_IN_DBNC)) & 0x1f;
+}
+
+bool read_pedal_digital(void) {
+    return (read_gpio(GPIO_IN_DBNC) & (1 << 13)) > 0;
+}
+
+uint32_t read_pedal_analogue(void) {
+    // TODO after implementing the ADC driver
+    return 0;
 }
 
 uint64_t wait(const uint64_t wait_for) {
@@ -144,7 +155,10 @@ int main(void)
     spi_t spi;
     spi_init(&spi, ETH_SPI, /*speed=*/0);
     eth_interface.spi = &spi;
-    uint8_t mac_source[6] = {0x3a, 0x30, 0x25, 0x24, 0xfe, 0x7a};
+    uint8_t mac_source[6];
+    for (uint8_t i = 0; i < 6; i++) {
+        mac_source[i] = FixedDemoHeader.mac_source[i];
+    }
     ksz8851_init(&eth_interface, mac_source);
 
     // Initialise LCD display drivers
@@ -156,20 +170,20 @@ int main(void)
     // Wait for a physical link
     if (!ksz8851_get_phy_status(&eth_interface)) {
         write_to_uart("Waiting for a good physical ethernet link...\n");
-        lcd_clean(0x000000);
+        lcd_clean(ColorBlack);
         lcd_draw_str(
             (lcd.parent.width / 2) - 55,
             (lcd.parent.height / 2) - 5,
             "Waiting for a good physical",
-            0x000000,
-            0xFFFFFF
+            ColorBlack,
+            ColorWhite
         );
         lcd_draw_str(
             (lcd.parent.width / 2) - 30,
             (lcd.parent.height / 2) + 5,
             "ethernet link...",
-            0x000000,
-            0xFFFFFF
+            ColorBlack,
+            ColorWhite
         );
     }
     while (!ksz8851_get_phy_status(&eth_interface)) {
@@ -195,7 +209,8 @@ int main(void)
         .loop = null_callback,
         .start = null_callback,
         .joystick_read = read_joystick,
-        .pedal_read = NULL,
+        .digital_pedal_read = read_pedal,
+        .analogue_pedal_read = NULL,
         .ethernet_transmit = send_ethernet_frame,
         .lcd = {
             .draw_str = lcd_draw_str,
@@ -205,15 +220,36 @@ int main(void)
         },
     });
 
-    uint8_t option;
-    while (option < 2) {
+    DemoApplication option;
+    while (true) {
         // Run demo selection
         option = select_demo();
 
-        if (option == 0) {
-            // Run automotive demo
-            init_simple_demo_mem(&mem_task_one, &mem_task_two);
-            run_simple_demo(get_elapsed_time());
+        // Run automotive demo
+        switch (option) {
+            case NoPedal:
+                // Run simple timed demo with no pedal & using passthrough
+                init_no_pedal_demo_mem(&mem_task_one, &mem_task_two);
+                run_no_pedal_demo(get_elapsed_time());
+                break;
+            case JoystickPedal:
+                // Run demo using a joystick as a pedal, with passthrough
+                init_joystick_demo_mem(&mem_task_one, &mem_task_two);
+                run_joystick_demo(get_elapsed_time());
+                break;
+            case DigitalPedal:
+                // Run demo using an actual physical pedal but taking
+                // a digital signal, using simulation instead of passthrough
+                init_digital_pedal_demo_mem(&mem_task_one, &mem_task_two);
+                run_digital_pedal_demo(get_elapsed_time());
+                break;
+            case AnaloguePedal:
+                // TODO not implemented yet
+                write_to_uart("This demo is not yet implemented. It requires an ADC");
+                // Run demo using an actual physical pedal, taking an
+                // analogue signal via an ADC, with passthrough.
+                break;
+
         }
     }
 
