@@ -118,7 +118,8 @@ int16_t read_adc(adc_t *adc) {
   putstr("\nADC_REG_VAUX_P_N_15: ");
   puthexn(DEV_READ(ADC_FROM_ADDR_AND_OFFSET(ADC_BASE, ADC_REG_VAUX_P_N_15)), 4);
   putstr("\n");*/
-  puthexn(DEV_READ(ADC_FROM_ADDR_AND_OFFSET(ADC_BASE, ADC_REG_CONFIG_1)), 8);
+  putstr("\n");
+  puthexn(DEV_READ(ADC_FROM_ADDR_AND_OFFSET(ADC_BASE, ADC_REG_TEMPERATURE)), 8);
   putstr("\n");
   uint16_t analogue_value = DEV_READ(adc->output_reg);
   analogue_value &= ADC_MEASUREMENT_MASK;

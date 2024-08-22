@@ -15,74 +15,74 @@
 
 // ADC DRP register offsets (each mapped sequentially to 4 bytes in memory).
 typedef enum ADCDRPRegisters {
-  ADC_REG_TEMPERATURE     = 0x00,
-  ADC_REG_V_CCINT         = 0x01,
-  ADC_REG_V_CCAUX         = 0x02,
-  ADC_REG_V_P_N           = 0x03,
-  ADC_REG_V_REF_P         = 0x04,
-  ADC_REG_V_REF_N         = 0x05,
-  ADC_REG_V_CCBRAM        = 0x06,
-  ADC_REG_SUPPLY_A_OFFSET = 0x08,
-  ADC_REG_ADC_A_OFFSET    = 0x09,
-  ADC_REG_ADC_A_GAIN      = 0x0A,
+  ADC_REG_TEMPERATURE         = 0x00,
+  ADC_REG_V_CCINT             = 0x01,
+  ADC_REG_V_CCAUX             = 0x02,
+  ADC_REG_V_P_N               = 0x03,
+  ADC_REG_V_REF_P             = 0x04,
+  ADC_REG_V_REF_N             = 0x05,
+  ADC_REG_V_CCBRAM            = 0x06,
+  ADC_REG_SUPPLY_A_OFFSET     = 0x08,
+  ADC_REG_ADC_A_OFFSET        = 0x09,
+  ADC_REG_ADC_A_GAIN          = 0x0A,
   // 0x0D to 0x0F are only defined on Zynq 7000S SoC devices
-  ADC_REG_VAUX_P_N_0      = 0x10,
-  ADC_REG_VAUX_P_N_1      = 0x11,
-  ADC_REG_VAUX_P_N_2      = 0x12,
-  ADC_REG_VAUX_P_N_3      = 0x13,
-  ADC_REG_VAUX_P_N_4      = 0x14,
-  ADC_REG_VAUX_P_N_5      = 0x15,
-  ADC_REG_VAUX_P_N_6      = 0x16,
-  ADC_REG_VAUX_P_N_7      = 0x17,
-  ADC_REG_VAUX_P_N_8      = 0x18,
-  ADC_REG_VAUX_P_N_9      = 0x19,
-  ADC_REG_VAUX_P_N_10     = 0x1A,
-  ADC_REG_VAUX_P_N_11     = 0x1B,
-  ADC_REG_VAUX_P_N_12     = 0x1C,
-  ADC_REG_VAUX_P_N_13     = 0x1D,
-  ADC_REG_VAUX_P_N_14     = 0x1E,
-  ADC_REG_VAUX_P_N_15     = 0x1F,
-  ADC_REG_MAX_TEMP        = 0x20,
-  ADC_REG_MAX_V_CCINT     = 0x21,
-  ADC_REG_MAX_V_CCAUX     = 0x22,
-  ADC_REG_MAX_V_CCBRAM    = 0x23,
-  ADC_REG_MIN_TEMP        = 0x24,
-  ADC_REG_MIN_V_CCINT     = 0x25,
-  ADC_REG_MIN_V_CCAUX     = 0x26,
-  ADC_REG_MIN_V_CCBRAM    = 0x27,
+  ADC_REG_VAUX_P_N_0          = 0x10,
+  ADC_REG_VAUX_P_N_1          = 0x11,
+  ADC_REG_VAUX_P_N_2          = 0x12,
+  ADC_REG_VAUX_P_N_3          = 0x13,
+  ADC_REG_VAUX_P_N_4          = 0x14,
+  ADC_REG_VAUX_P_N_5          = 0x15,
+  ADC_REG_VAUX_P_N_6          = 0x16,
+  ADC_REG_VAUX_P_N_7          = 0x17,
+  ADC_REG_VAUX_P_N_8          = 0x18,
+  ADC_REG_VAUX_P_N_9          = 0x19,
+  ADC_REG_VAUX_P_N_10         = 0x1A,
+  ADC_REG_VAUX_P_N_11         = 0x1B,
+  ADC_REG_VAUX_P_N_12         = 0x1C,
+  ADC_REG_VAUX_P_N_13         = 0x1D,
+  ADC_REG_VAUX_P_N_14         = 0x1E,
+  ADC_REG_VAUX_P_N_15         = 0x1F,
+  ADC_REG_MAX_TEMP            = 0x20,
+  ADC_REG_MAX_V_CCINT         = 0x21,
+  ADC_REG_MAX_V_CCAUX         = 0x22,
+  ADC_REG_MAX_V_CCBRAM        = 0x23,
+  ADC_REG_MIN_TEMP            = 0x24,
+  ADC_REG_MIN_V_CCINT         = 0x25,
+  ADC_REG_MIN_V_CCAUX         = 0x26,
+  ADC_REG_MIN_V_CCBRAM        = 0x27,
   // 0x28 to 0x2E are only defined on Zynq 7000S SoC devices
-  ADC_REG_SUPPLY_B_OFFSET = 0x30,
-  ADC_REG_ADC_B_OFFSET    = 0x31,
-  ADC_REG_ADC_B_GAIN      = 0x32,
-  ADC_REG_FLAG            = 0x3F,
-  ADC_REG_CONFIG_0        = 0x40,
-  ADC_REG_CONFIG_1        = 0x41,
-  ADC_REG_CONFIG_2        = 0x42,
+  ADC_REG_SUPPLY_B_OFFSET     = 0x30,
+  ADC_REG_ADC_B_OFFSET        = 0x31,
+  ADC_REG_ADC_B_GAIN          = 0x32,
+  ADC_REG_FLAG                = 0x3F,
+  ADC_REG_CONFIG_0            = 0x40,
+  ADC_REG_CONFIG_1            = 0x41,
+  ADC_REG_CONFIG_2            = 0x42,
   // 0x43 to 0x47 are factory test registers
-  ADC_REG_SEQ_0           = 0x48,
-  ADC_REG_SEQ_1           = 0x49,
-  ADC_REG_SEQ_2           = 0x4A,
-  ADC_REG_SEQ_3           = 0x4B,
-  ADC_REG_SEQ_4           = 0x4C,
-  ADC_REG_SEQ_5           = 0x4D,
-  ADC_REG_SEQ_6           = 0x4E,
-  ADC_REG_SEQ_7           = 0x4F,
-  ADC_REG_ALARM_0         = 0x50,
-  ADC_REG_ALARM_1         = 0x51,
-  ADC_REG_ALARM_2         = 0x52,
-  ADC_REG_ALARM_3         = 0x53,
-  ADC_REG_ALARM_4         = 0x54,
-  ADC_REG_ALARM_5         = 0x55,
-  ADC_REG_ALARM_6         = 0x56,
-  ADC_REG_ALARM_7         = 0x57,
-  ADC_REG_ALARM_8         = 0x58,
-  ADC_REG_ALARM_9         = 0x59,
-  ADC_REG_ALARM_10        = 0x5A,
-  ADC_REG_ALARM_11        = 0x5B,
-  ADC_REG_ALARM_12        = 0x5C,
-  ADC_REG_ALARM_13        = 0x5D,
-  ADC_REG_ALARM_14        = 0x5E,
-  ADC_REG_ALARM_15        = 0x5F,
+  ADC_REG_SEQ_CHANNEL_0       = 0x48,
+  ADC_REG_SEQ_CHANNEL_1       = 0x49,
+  ADC_REG_SEQ_AVERAGE_0       = 0x4A,
+  ADC_REG_SEQ_AVERAGE_1       = 0x4B,
+  ADC_REG_SEQ_INPUT_MODE_0    = 0x4C,
+  ADC_REG_SEQ_INPUT_MODE_1    = 0x4D,
+  ADC_REG_SEQ_SETTLING_TIME_0 = 0x4E,
+  ADC_REG_SEQ_SETTLING_TIME_1 = 0x4F,
+  ADC_REG_ALARM_0             = 0x50,
+  ADC_REG_ALARM_1             = 0x51,
+  ADC_REG_ALARM_2             = 0x52,
+  ADC_REG_ALARM_3             = 0x53,
+  ADC_REG_ALARM_4             = 0x54,
+  ADC_REG_ALARM_5             = 0x55,
+  ADC_REG_ALARM_6             = 0x56,
+  ADC_REG_ALARM_7             = 0x57,
+  ADC_REG_ALARM_8             = 0x58,
+  ADC_REG_ALARM_9             = 0x59,
+  ADC_REG_ALARM_10            = 0x5A,
+  ADC_REG_ALARM_11            = 0x5B,
+  ADC_REG_ALARM_12            = 0x5C,
+  ADC_REG_ALARM_13            = 0x5D,
+  ADC_REG_ALARM_14            = 0x5E,
+  ADC_REG_ALARM_15            = 0x5F,
 } ADCDRPRegisters;
 
 // Definitions of bits of XADC ConfigRegister0 (offset 0x40)
@@ -212,14 +212,14 @@ typedef enum ADCSampleAveragingMode {
 
 // Definitions of posible ADC sequencer operation settings that can be 
 // selected using XADC Config Register 1. 
-typedef enum ADCSequencerOperationMode {
+typedef enum ADCConfigSequencerOperationMode {
   ADC_SEQUENCER_DEFAULT_MODE               = 0x0,
   ADC_SEQUENCER_SINGLE_PASS_SEQUENCE       = 0x1,
   ADC_SEQUENCER_CONTINUOUS_SEQUENCE_MODE   = 0x2,
   ADC_SEQUENCER_SINGLE_CHANNEL_MODE        = 0x3,
   ADC_SEQUENCER_SIMULTANEOUS_SAMPLING_MODE = 0x4,
   ADC_SEQUENCER_INDEPENDENT_ADC_MODE       = 0x8,
-} ADCSequencerOperationMode;
+} ADCConfigSequencerOperationMode;
 
 // Definitions of possible ADC Power Down settings that can be
 // selected using XADC Config Register 2.
@@ -228,6 +228,51 @@ typedef enum ADCPowerDownMode {
   ADC_POWER_DOWN_ADC_B = 0x2,
   ADC_POWER_DOWN_XADC  = 0x3,
 } ADCPowerDownMode;
+
+// Bits used in the channel sequencer control registers. Each of the four
+// channel sequencer properties are configured by two sequential DRP control
+// registers (0 and 1). Setting the relevant bit to 1 in the correct
+// register for a given property will enable that property for that channel
+// in the automatic sequencer. This enum covers bits for register 0 (the
+// lower offset of each pair).
+typedef enum ADCSequencerChannelSelectBits0 {
+  ADC_SEQUENCER_XADC_CALIBRATION_BIT    = (1 << 0),
+  ADC_SEQUENCER_V_CCPINT_BIT            = (1 << 5),
+  ADC_SEQUENCER_V_CCPAUX_BIT            = (1 << 6),
+  ADC_SEQUENCER_V_CCO_DDR_BIT           = (1 << 7),
+  ADC_SEQUENCER_ON_CHIP_TEMPERATURE_BIT = (1 << 8),
+  ADC_SEQUENCER_V_CCINT_BIT             = (1 << 9),
+  ADC_SEQUENCER_V_CCAUX_BIT             = (1 << 10),
+  ADC_SEQUENCER_V_P_N_BIT               = (1 << 11), 
+  ADC_SEQUENCER_V_REFP_BIT              = (1 << 12),
+  ADC_SEQUENCER_V_REFN_BIT              = (1 << 13),
+  ADC_SEQUENCER_V_CCBRAM_BIT            = (1 << 14),
+} ADCSequencerChannelSelectBits0;
+
+// Bits used in the channel sequencer control registers. Each of the four
+// channel sequencer properties are configured by two sequential DRP control
+// registers (0 and 1). Setting the relevant bit to 1 in the correct
+// register for a given property will enable that property for that channel
+// in the automatic sequencer. This enum covers bits for register 1 (the
+// higher offset of each pair).
+typedef enum ADCSequencerChannelSelectBits1 {
+  ADC_SEQUENCER_VAUX_P_N_0_BIT  = (1 << 0),
+  ADC_SEQUENCER_VAUX_P_N_1_BIT  = (1 << 1),
+  ADC_SEQUENCER_VAUX_P_N_2_BIT  = (1 << 2),
+  ADC_SEQUENCER_VAUX_P_N_3_BIT  = (1 << 3),
+  ADC_SEQUENCER_VAUX_P_N_4_BIT  = (1 << 4),
+  ADC_SEQUENCER_VAUX_P_N_5_BIT  = (1 << 5),
+  ADC_SEQUENCER_VAUX_P_N_6_BIT  = (1 << 6),
+  ADC_SEQUENCER_VAUX_P_N_7_BIT  = (1 << 7),
+  ADC_SEQUENCER_VAUX_P_N_8_BIT  = (1 << 8),
+  ADC_SEQUENCER_VAUX_P_N_9_BIT  = (1 << 9),
+  ADC_SEQUENCER_VAUX_P_N_10_BIT = (1 << 10),
+  ADC_SEQUENCER_VAUX_P_N_11_BIT = (1 << 11),
+  ADC_SEQUENCER_VAUX_P_N_12_BIT = (1 << 12),
+  ADC_SEQUENCER_VAUX_P_N_13_BIT = (1 << 13),
+  ADC_SEQUENCER_VAUX_P_N_14_BIT = (1 << 14),
+  ADC_SEQUENCER_VAUX_P_N_15_BIT = (1 << 15),
+} ADCSequencerChannelSelectBits1;
 
 typedef uint8_t ADCClockDivider;
 
