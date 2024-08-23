@@ -18,6 +18,7 @@
 #include "timer.h"
 #include "rv_plic.h"
 #include "spi.h"
+#include "adc.h"
 #include "core/m3x6_16pt.h"
 #include "st7735/lcd_st7735.h"
 #include "ksz8851.h"
@@ -150,6 +151,27 @@ int main(void)
     timer_init();
     timer_enable(SYSCLK_FREQ / 1000);
 
+    // ADC testing!
+    // We set the clock divider to sample 500 Kilo samples per second (KSPS)
+    ADCClockDivider adc_divider = (SYSCLK_FREQ / ADC_MAX_SAMPLES) * 2;
+    adc_t adc;
+    adc_init(
+        &adc, 
+        ADC_FROM_BASE_ADDR(ADC_BASE),
+        ADC_FROM_ADDR_AND_OFFSET(
+            ADC_BASE,
+            ADC_REG_VAUX_P_N_14),
+        ADC_CHANNEL_VAUX_P_N_14,
+        ADC_AVERAGING_256_SAMPLES,
+        adc_divider,
+        false,
+        false
+    );
+    while (true) {
+        write_to_uart("ADC value: %d\n", read_adc(&adc));
+        wait(get_elapsed_time() + 50);
+    }
+
     // Initialise Ethernet support
     rv_plic_init();
     spi_t spi;
@@ -209,8 +231,8 @@ int main(void)
         .loop = null_callback,
         .start = null_callback,
         .joystick_read = read_joystick,
-        .digital_pedal_read = read_pedal,
-        .analogue_pedal_read = NULL,
+        .digital_pedal_read = read_pedal_digital,
+        .analogue_pedal_read = read_pedal_analogue,
         .ethernet_transmit = send_ethernet_frame,
         .lcd = {
             .draw_str = lcd_draw_str,

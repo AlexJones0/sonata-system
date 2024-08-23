@@ -9,28 +9,8 @@
 
 static void set_adc_bits(adc_reg_t reg, uint32_t bit_mask, uint32_t bit_val) {
   uint32_t adc_bits = DEV_READ(reg);
-  if (reg == ADC_FROM_ADDR_AND_OFFSET(ADC_BASE, ADC_REG_CONFIG_0)) {
-    putstr("CONFIG0 prev value:\n");
-    puthexn(adc_bits, 8);
-    putstr("\n");
-  }
-  if (reg == ADC_FROM_ADDR_AND_OFFSET(ADC_BASE, ADC_REG_CONFIG_1)) {
-    putstr("CONFIG1 prev value:\n");
-    puthexn(adc_bits, 8);
-    putstr("\n");
-  }
   adc_bits &= ~bit_mask;  // Clear bits in the mask
   adc_bits |= bit_mask & bit_val; // Set values of bits in the mask.
-  if (reg == ADC_FROM_ADDR_AND_OFFSET(ADC_BASE, ADC_REG_CONFIG_0)) {
-    putstr("CONFIG0 new value:\n");
-    puthexn(adc_bits, 8);
-    putstr("\n");
-  }
-  if (reg == ADC_FROM_ADDR_AND_OFFSET(ADC_BASE, ADC_REG_CONFIG_1)) {
-    putstr("CONFIG1 new value:\n");
-    puthexn(adc_bits, 8);
-    putstr("\n");
-  }
   DEV_WRITE(reg, adc_bits);
 }
 
@@ -57,29 +37,29 @@ void adc_init(
   adc->output_reg = output_reg;
 
   adc->channel = channel;
-  set_adc_bits(reg_config0, ADC_CONFIG_REG0_CHANNEL_MASK, channel);
+  //set_adc_bits(reg_config0, ADC_CONFIG_REG0_CHANNEL_MASK, channel);
   
   adc->averaging_mode = averaging_mode;
-  set_adc_bits(reg_config0, ADC_CONFIG_REG0_AVG_MASK, (averaging_mode << 12));
+  //set_adc_bits(reg_config0, ADC_CONFIG_REG0_AVG_MASK, (averaging_mode << 12));
   
   adc->divider = divider;
-  set_adc_bits(
+  /*set_adc_bits(
     ADC_FROM_ADDR_AND_OFFSET(ADC_BASE, ADC_REG_CONFIG_2),
     ADC_CONFIG_REG2_DIVIDER_MASK,
     (divider << 8)
-  );
+  );*/
 
   adc->enable_acq = enable_acq;
-  set_adc_bit(reg_config0, ADC_CONFIG_REG0_ACQ, enable_acq);
+  //set_adc_bit(reg_config0, ADC_CONFIG_REG0_ACQ, enable_acq);
   
   adc->enable_bipolar = enable_bipolar;
-  set_adc_bit(reg_config0, ADC_CONFIG_REG0_BU, enable_bipolar);
+  //set_adc_bit(reg_config0, ADC_CONFIG_REG0_BU, enable_bipolar);
 
-  set_adc_bits(
+  /*set_adc_bits(
     ADC_FROM_ADDR_AND_OFFSET(ADC_BASE, ADC_REG_CONFIG_1),
     ADC_CONFIG_REG1_SEQUENCER_MASK,
     (ADC_SEQUENCER_DEFAULT_MODE << 12)
-  );
+  );*/
 }
 
 int16_t read_adc(adc_t *adc) {
@@ -118,9 +98,6 @@ int16_t read_adc(adc_t *adc) {
   putstr("\nADC_REG_VAUX_P_N_15: ");
   puthexn(DEV_READ(ADC_FROM_ADDR_AND_OFFSET(ADC_BASE, ADC_REG_VAUX_P_N_15)), 4);
   putstr("\n");*/
-  putstr("\n");
-  puthexn(DEV_READ(ADC_FROM_ADDR_AND_OFFSET(ADC_BASE, ADC_REG_TEMPERATURE)), 8);
-  putstr("\n");
   uint16_t analogue_value = DEV_READ(adc->output_reg);
   analogue_value &= ADC_MEASUREMENT_MASK;
   analogue_value >>= (ADC_DRP_REG_SIZE - ADC_BIT_WIDTH);
