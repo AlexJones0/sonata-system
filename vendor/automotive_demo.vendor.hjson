@@ -1,0 +1,17 @@
+// Copyright lowRISC contributors.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: "automotive_demo",
+  target_dir: "automotive_demo",
+  patch_dir: "",
+
+  upstream: {
+    url: "https://github.com/AlexJones0/sonata-automotive-demo.git",
+    rev: "main",
+  }
+
+  exclude_from_upstream: [
+    "tools",
+  ]
+}
