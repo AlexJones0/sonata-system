@@ -9,6 +9,8 @@
 
 #define PWM_BASE   0x80001000
 
+#define ADC_BASE   0x8000B000
+
 #define TIMER_BASE 0x80040000
 
 #define UART0_BASE 0x80100000
