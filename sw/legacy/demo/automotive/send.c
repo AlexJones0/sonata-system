@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "adc.h"
 #include "core/lucida_console_10pt.h"
 #include "core/lucida_console_12pt.h"
 #include "core/m3x6_16pt.h"
@@ -25,6 +26,13 @@
 #include "spi.h"
 #include "st7735/lcd_st7735.h"
 #include "timer.h"
+
+// When using our model pedal, these are the maximum and minimum values that
+// are measured through the ADC from the pedal's full range of motion. We
+// hard-code these so that we can linearly transform from this range of ADC
+// measurements to acceleration values.
+#define PEDAL_MIN_ANALOGUE 310
+#define PEDAL_MAX_ANALOGUE 1700
 
 #define BACKGROUND_COLOUR ColorBlack
 #define TEXT_COLOUR ColorWhite
@@ -164,8 +172,42 @@ uint8_t read_joystick(void) { return ((uint8_t)read_gpio(GPIO_IN_DBNC)) & 0x1f; 
  */
 bool read_pedal_digital(void) { return (read_gpio(GPIO_IN_DBNC) & (1 << 13)) > 0; }
 
+/**
+ * A callback function used to read the pedal input as an analogue value via the
+ * ADC driver. Reads the highest analogue value from all analogue inputs to the
+ * board, and then uses known measured analogue ranges to linearly transform the
+ * measurement into the acceleration range defined for the demo.
+ *
+ * Returns a value between DEMO_ACCELERATION_PEDAL_MIN and
+ * DEMO_ACCELERATION_PEDAL_MAX, corresponding to the analogue pedal input.
+ */
 uint32_t read_pedal_analogue(void) {
+  uint32_t maxPedalValue = 0;
+  // To allow the user to put the pedal pin in any of the analogue Arduino
+  // pins, read all measurements and take the max.
+  const AdcSampleStatusRegister pins[6] = {
+      ADC_STATUS_ARDUINO_A0, ADC_STATUS_ARDUINO_A1, ADC_STATUS_ARDUINO_A2,
+      ADC_STATUS_ARDUINO_A3, ADC_STATUS_ARDUINO_A4, ADC_STATUS_ARDUINO_A5,
+  };
+  for (uint8_t i = 0; i < 6; ++i) {
+    maxPedalValue = MAX(maxPedalValue, read_adc(&adc, pins[i]));
+  }
+  write_to_uart("Measured Analogue Value: {}", (unsigned int)maxPedalValue);
+
+  // Clamp the measured analogue values between the known minimum and maximum,
+  // and then linearly transform the analogue range for our pedal to the
+  // range needed for the demo.
+  // Linearly transform the analogue range for our pedal to the range needed
+  // for the demo. Clamp values between min and max analogue.
   uint32_t pedal = 0;
+  if (maxPedalValue > PEDAL_MAX_ANALOGUE) {
+    pedal = PEDAL_MAX_ANALOGUE - PEDAL_MIN_ANALOGUE;
+  } else if (maxPedalValue > PEDAL_MIN_ANALOGUE) {
+    pedal = maxPedalValue - PEDAL_MIN_ANALOGUE;
+  }
+  pedal *= (DEMO_ACCELERATION_PEDAL_MAX - DEMO_ACCELERATION_PEDAL_MIN);
+  pedal /= (PEDAL_MAX_ANALOGUE - PEDAL_MIN_ANALOGUE);
+  pedal += DEMO_ACCELERATION_PEDAL_MIN;
   return pedal;
 }
 
@@ -208,6 +250,17 @@ static TaskOne memTaskOne = {
     .speed        = 0,
 };
 
+__attribute__((section(".data.__contiguous.__analogue_task_two")))  // NO-FORMAT
+static AnalogueTaskTwo memAnalogueTaskTwo = {
+    .framebuffer = {0},
+};
+
+__attribute__((section(".data.__contiguous.__analogue_task_one")))  // NO-FORMAT
+static AnalogueTaskOne memAnalogueTaskOne = {
+    .acceleration = 12,
+    .braking      = 2,
+};
+
 /**
  * The main loop for the sending board in the automotive demo. This
  * simply infinitely displays the menu to the user so that they can
@@ -233,6 +286,10 @@ void main_demo_loop() {
         run_digital_pedal_demo(get_elapsed_time());
         break;
       case DemoAnaloguePedal:
+        // Run demo using an actual physical pedal, taking an
+        // analogue signal via an ADC, with passthrough.
+        init_analogue_pedal_demo_mem(&memAnalogueTaskOne, &memAnalogueTaskTwo);
+        run_analogue_pedal_demo(get_elapsed_time());
         break;
     }
   }
@@ -287,6 +344,10 @@ int main(void) {
   // Wait an additional 0.25s to give the receiving board time to setup.
   wait(get_elapsed_time() + 2500);
 
+  // Initialise the ADC driver for use via callback
+  adc_clock_divider divider = (SYSCLK_FREQ / ADC_MIN_CLCK_FREQ);
+  adc_init(&adc, ADC_FROM_BASE_ADDR(ADC_BASE), divider);
+
   // Adapt the common automotive library for legacy drivers
   init_lcd(lcd.parent.width, lcd.parent.height);
   init_callbacks((AutomotiveCallbacks){
@@ -316,6 +377,7 @@ int main(void) {
   write_to_uart("taskOneMem location: %u\n", (unsigned int)&memTaskOne);
   write_to_uart("taskOneMem size: %u\n", (unsigned int)sizeof(memTaskOne));
   assert((uint32_t)&memTaskTwo + sizeof(memTaskTwo) == (uint32_t)&memTaskOne);
+  assert((uint32_t)&memAnalogueTaskTwo + sizeof(memAnalogueTaskTwo) == (uint32_t)&memAnalogueTaskOne);
 
   // Begin the main demo loop
   main_demo_loop();
