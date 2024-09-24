@@ -38,10 +38,12 @@ class SpiFlash {
   void reset() {
     set_cs(true);
     spi->blocking_write(&CmdEnableReset, 1);
+	spi->wait_idle();
     set_cs(false);
 
     set_cs(true);
     spi->blocking_write(&CmdReset, 1);
+	spi->wait_idle();
     set_cs(false);
 
     // Need to wait at least 30us for the reset to complete.
@@ -61,11 +63,13 @@ class SpiFlash {
 
     set_cs(true);
     spi->blocking_write(&CmdWriteEnable, 1);
+	spi->wait_idle();
     set_cs(false);
 
     set_cs(true);
     spi->blocking_write(erase_cmd, 4);
-    set_cs(false);
+    spi->wait_idle();
+	set_cs(false);
 
     set_cs(true);
     spi->blocking_write(&CmdReadStatusRegister1, 1);
@@ -84,11 +88,13 @@ class SpiFlash {
 
     set_cs(true);
     spi->blocking_write(&CmdWriteEnable, 1);
+	spi->wait_idle();
     set_cs(false);
 
     set_cs(true);
     spi->blocking_write(write_cmd, 4);
     spi->blocking_write(data, 256);
+	spi->wait_idle();
     set_cs(false);
 
     set_cs(true);
