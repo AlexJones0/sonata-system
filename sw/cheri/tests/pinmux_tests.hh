@@ -290,6 +290,7 @@ static int pinmux_spi_flash_test(SonataPinmux *pinmux, Capability<volatile Sonat
   spi->wait_idle();
   if (!pinmux->output_pin_select(SonataPinmux::OutputPin::SpiFlashData, PmxToDisabled)) failures++;
   if (!pinmux->output_pin_select(SonataPinmux::OutputPin::SpiFlashClock, PmxToDisabled)) failures++;
+  spi->init(false, false, true, 0);
 
   // Run the JEDEC ID Test again; we expect it to fail.
   if (spi_jedec_id_test(spi, spi_flash) == 0) failures++;
@@ -298,6 +299,7 @@ static int pinmux_spi_flash_test(SonataPinmux *pinmux, Capability<volatile Sonat
   spi->wait_idle();
   if (!pinmux->output_pin_select(SonataPinmux::OutputPin::SpiFlashData, PmxSpiFlashDataToSpiTx0)) failures++;
   if (!pinmux->output_pin_select(SonataPinmux::OutputPin::SpiFlashClock, PmxSpiFlashClockToSpiClk0)) failures++;
+  spi->init(false, false, true, 0);
 
   // Run the JEDEC ID Test one more time; it should pass.
   failures += spi_jedec_id_test(spi, spi_flash);
