@@ -306,6 +306,20 @@ static int pinmux_spi_flash_test(SonataPinmux *pinmux, Capability<volatile Sonat
 }
 
 /**
+ * Resets an I2C controller to acknowledge and disable any Controller Halt
+ * events. When the I2C device is disconnected from Pinmux and tested,
+ * the controller will continue to halt as it will not be able to see
+ * changes it makes. As such, we disable the I2C block and clear its
+ * controller events, to get it back into a normal state.
+ */
+static void reset_i2c_controller(I2cPtr i2c) {
+  i2c->control = i2c->control & ~(i2c->ControlEnableHost | i2c->ControlEnableTarget);
+  if (i2c->interrupt_is_asserted(OpenTitanI2cInterrupt::ControllerHalt)) {
+    i2c->reset_controller_events();
+  }
+}
+
+/**
  * Test pinmux by enabling and disabling the I2C pins for the Rapberry Pi Sense
  * HAT. This requires the RPi Sense HAT to be connected to the Sonata board, otherwise the
  * test will fail.
@@ -347,6 +361,7 @@ static int pinmux_i2c_test(SonataPinmux *pinmux, I2cPtr i2c0, I2cPtr i2c1) {
   if (!pinmux->output_pin_select(SonataPinmux::OutputPin::RaspberryPiHat28, PmxRPiHat28ToI2cScl0)) failures++;
   if (!pinmux->output_pin_select(SonataPinmux::OutputPin::RaspberryPiHat3, PmxToDisabled)) failures++;
   if (!pinmux->output_pin_select(SonataPinmux::OutputPin::RaspberryPiHat5, PmxToDisabled)) failures++;
+  reset_i2c_controller(i2c0);
   failures += i2c_rpi_hat_id_eeprom_test(i2c0);
   if (i2c_rpi_hat_imu_whoami_test(i2c1) == 0) failures++;
 
@@ -354,6 +369,7 @@ static int pinmux_i2c_test(SonataPinmux *pinmux, I2cPtr i2c0, I2cPtr i2c1) {
   // tests now pass again.
   if (!pinmux->output_pin_select(SonataPinmux::OutputPin::RaspberryPiHat3, PmxRPiHat3ToI2cSda1)) failures++;
   if (!pinmux->output_pin_select(SonataPinmux::OutputPin::RaspberryPiHat5, PmxRPiHat5ToI2cScl1)) failures++;
+  reset_i2c_controller(i2c1);
   failures += i2c_rpi_hat_id_eeprom_test(i2c0);
   failures += i2c_rpi_hat_imu_whoami_test(i2c1);
 
